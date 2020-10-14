@@ -17,6 +17,9 @@ public class ProjectOne {
 	static final int MEMORY_RESERVED_FOR_PROGRAM_IN_KB = 1020;
 
 	public static void main(String[] args) {
+		
+		long startTime = System.currentTimeMillis();
+		
 		try {
 
 			File file = new File(FILE);
@@ -47,7 +50,7 @@ public class ProjectOne {
 			/*******************************************************************************
 			 * ------------------------------- PHASE 1 -------------------------------------
 			 *******************************************************************************/
-
+			long phaseOneStartTime = System.currentTimeMillis();
 			if (DEBUG) {
 				System.out.println("PHASE 1");
 			}
@@ -89,11 +92,14 @@ public class ProjectOne {
 			}
 
 			scanner.close();
+			long phaseOneEndTime = System.currentTimeMillis();
+			System.out.println("Phase One Time Cost£º " + (phaseOneEndTime - phaseOneStartTime) + "ms");
 
 			/*******************************************************************************
 			 * ------------------------------- PHASE 2 -------------------------------------
 			 *******************************************************************************/
-
+			
+			long phaseTwoStartTime = System.currentTimeMillis();
 			if (DEBUG) {
 				System.out.println("PHASE 2");
 			}
@@ -200,10 +206,15 @@ public class ProjectOne {
 
 				}
 			}
+			long phaseTwoEndTime = System.currentTimeMillis();
+			System.out.println("Phase Two Time Cost£º " + (phaseTwoEndTime - phaseTwoStartTime) + "ms");
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
+		long endTime = System.currentTimeMillis();
+		System.out.println("Total time cost£º " + (endTime - startTime) + "ms");
 	}
 
 	private static Deque<File> getPhase2Files(int stage, int numOfFiles) {
