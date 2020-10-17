@@ -34,7 +34,7 @@ public class ProjectOne {
 				if (size.contains("MB")) {
 					memorySizeInKB = Integer.parseInt(size.replace("MB", "")) * 1024;
 				} else if (size.contains("KB")) {
-					memorySizeInKB = Integer.parseInt(size.replace("MB", ""));
+					memorySizeInKB = Integer.parseInt(size.replace("KB", ""));
 
 				} else {
 					System.out.println("The input file doesn't contains correct memory size.");
@@ -93,7 +93,7 @@ public class ProjectOne {
 
 			scanner.close();
 			long phaseOneEndTime = System.currentTimeMillis();
-			System.out.println("Phase One Time Cost£º " + (phaseOneEndTime - phaseOneStartTime) + "ms");
+			System.out.println("Phase One Time CostÂ£Âº " + (phaseOneEndTime - phaseOneStartTime) + "ms");
 
 			/*******************************************************************************
 			 * ------------------------------- PHASE 2 -------------------------------------
@@ -207,14 +207,14 @@ public class ProjectOne {
 				}
 			}
 			long phaseTwoEndTime = System.currentTimeMillis();
-			System.out.println("Phase Two Time Cost£º " + (phaseTwoEndTime - phaseTwoStartTime) + "ms");
+			System.out.println("Phase Two Time CostÂ£Âº " + (phaseTwoEndTime - phaseTwoStartTime) + "ms");
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		long endTime = System.currentTimeMillis();
-		System.out.println("Total time cost£º " + (endTime - startTime) + "ms");
+		System.out.println("Total time costÂ£Âº " + (endTime - startTime) + "ms");
 	}
 
 	private static Deque<File> getPhase2Files(int stage, int numOfFiles) {
