@@ -10,41 +10,40 @@ import java.util.Scanner;
 
 public class ProjectOne {
 
-	static final String FILE = "input.txt";
+	static final String FILE = "dataInput.txt";
 	static final boolean DEBUG = true;
 	static long sampleSize = 0l;
 	static int memorySizeInKB = 1024;
 	static final int MEMORY_RESERVED_FOR_PROGRAM_IN_KB = 1020;
+	
+	public static void insertSort(int[] arr) {
+		int j; // 已排序列表下标
+		int t; // 待排序元素
+		for (int i = 1; i < arr.length; i++) {
+			if (arr[i] < arr[i - 1]) { 
+				t = arr[i]; // 赋值给待排序元素
+				for (j = i - 1; j >= 0 && arr[j] > t; j--) {
+					arr[j + 1] = arr[j]; // 从后往前遍历已排序列表，逐个和待排序元素比较，如果已排序元素较大，则将它后移
+				}
+				arr[j + 1] = t; // 将待排序元素插入到正确的位置
+			}
+		}
+	}
 
 	public static void main(String[] args) {
 		
-		long startTime = System.currentTimeMillis();
+		//long startTime = System.currentTimeMillis();
 		
 		try {
 
 			File file = new File(FILE);
 			Scanner scanner = new Scanner(file);
 
-			if (scanner.hasNext()) {
-				sampleSize = Long.parseLong(scanner.next());
-			}
-
-			if (scanner.hasNext()) {
-				String size = scanner.next();
-				if (size.contains("MB")) {
-					memorySizeInKB = Integer.parseInt(size.replace("MB", "")) * 1024;
-				} else if (size.contains("KB")) {
-					memorySizeInKB = Integer.parseInt(size.replace("KB", ""));
-
-				} else {
-					System.out.println("The input file doesn't contains correct memory size.");
-					System.exit(0);
-				}
-			}
+			String firstLine = scanner.nextLine();
+			sampleSize = Long.parseLong(firstLine.split(" ")[0]);		
 
 			if (DEBUG) {
 				System.out.println("sampleSize = " + sampleSize + " samples");
-				System.out.println("memorySizeInKB = " + memorySizeInKB + " KB");
 			}
 
 			/*******************************************************************************
@@ -54,51 +53,57 @@ public class ProjectOne {
 			if (DEBUG) {
 				System.out.println("PHASE 1");
 			}
-
-			int memoryForData = memorySizeInKB - MEMORY_RESERVED_FOR_PROGRAM_IN_KB;
-			int numOfIntInMemory = memoryForData * 1024 / 4;
-
-			// if it's 1, we don't need phase 2, one MS will finish the job
-			int numOfRunsInPhase1 = (int) Math.ceil((double) sampleSize / numOfIntInMemory);
-
-			if (DEBUG) {
-				System.out.println("\tmemoryForData = " + memoryForData + " KB");
-				System.out.println("\tnumOfIntInMemory = " + numOfIntInMemory + " integers");
-				System.out.println("\tnumOfRunsInPhase1 = " + numOfRunsInPhase1 + " runs");
-			}
-
-			for (int i = 0; i < numOfRunsInPhase1; i++) {
-				int[] recordsInMemory = new int[numOfIntInMemory];
-				for (int j = 0; j < numOfIntInMemory; j++) {
+			
+			int turn = 0;
+		
+			while(scanner.hasNext()) {
+				
+				File output = new File("output_phase_1_file_" + turn + ".txt");
+				
+				long totalMemory = Runtime.getRuntime().totalMemory();
+				long available = Runtime.getRuntime().freeMemory();
+				
+				System.out.println("Total Memory(MB): " + (totalMemory / (1024*1024)));	
+				System.out.println("Available Memory(MB): " + (available / (1024 * 1024)));
+				
+				int arrayLength = (int) available / 4;
+				System.out.println("Array Length: " + arrayLength);
+				
+				int[] array = new int[arrayLength];
+				for (int j = 0; j < arrayLength; j++) {
 					if (scanner.hasNext()) {
-						recordsInMemory[j] = scanner.nextInt();
+						array[j] = Integer.parseInt(scanner.next());
 					} else {
 						break;
 					}
 				}
+				
+				ProjectOne.insertSort(array);
 
-				new MergeSort(recordsInMemory).run();
-
-				File output = new File("output_phase_1_file_" + i + ".txt");
-				if (output.createNewFile()) {
-					FileWriter writer = new FileWriter(output);
-					for (int k : recordsInMemory) {
-						if (k > 0) {
-							writer.write(k + " ");
-						}
+				output.createNewFile();
+				FileWriter writer = new FileWriter(output);
+				for (int k = 0; k < array.length; k++) {
+					if (array[k] != 0) {
+						//System.out.println(array[k]);
+						writer.write(String.valueOf(array[k]) + " ");
 					}
-					writer.close();
 				}
+				writer.close();
+				turn += 1;
 			}
-
+			
 			scanner.close();
 			long phaseOneEndTime = System.currentTimeMillis();
-			System.out.println("Phase One Time Cost拢潞 " + (phaseOneEndTime - phaseOneStartTime) + "ms");
+			System.out.println("Phase One Time Cost: " + (phaseOneEndTime - phaseOneStartTime) + "ms");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 			/*******************************************************************************
 			 * ------------------------------- PHASE 2 -------------------------------------
 			 *******************************************************************************/
-			
+	/*		
 			long phaseTwoStartTime = System.currentTimeMillis();
 			if (DEBUG) {
 				System.out.println("PHASE 2");
@@ -207,14 +212,14 @@ public class ProjectOne {
 				}
 			}
 			long phaseTwoEndTime = System.currentTimeMillis();
-			System.out.println("Phase Two Time Cost拢潞 " + (phaseTwoEndTime - phaseTwoStartTime) + "ms");
+			System.out.println("Phase Two Time Cost: " + (phaseTwoEndTime - phaseTwoStartTime) + "ms");
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		long endTime = System.currentTimeMillis();
-		System.out.println("Total time cost拢潞 " + (endTime - startTime) + "ms");
+		System.out.println("Total time cost: " + (endTime - startTime) + "ms");
 	}
 
 	private static Deque<File> getPhase2Files(int stage, int numOfFiles) {
@@ -235,4 +240,5 @@ public class ProjectOne {
 		}
 		return files;
 	}
+}*/
 }
