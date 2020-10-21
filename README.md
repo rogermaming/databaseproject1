@@ -1,19 +1,9 @@
-1. DataGenerator to generate 20MB ----- Ming
-
-Added a DataGenerator.exe, it will generate input files, the command line will show like this:
-
-This is an input data generator for COMP 6521. It will generate given amount of integers in a file.
-
-
-The number of integers you want to generate (for example: 100000): 100000
-
-The main memory size (for example: 5MB): 5MB
-
-The name of output file (for example: input1.txt): test.txt
-
-
+1. DataGenerator to generate 20MB ----- Ming (exe version), Alex (java version)
+                                        Finished on Oct 20
 2. MPMMS ----- Daniel, Alex, Ming
+               Implemented first working algorithm on Oct 20
 3. Add a timer in the main class ----- Alex
+               Finished on Oct 13
 4. JVM monitor tool to check how much memory we are actually using ----- Ming
 5. Make the codes more efficient ----- Ming
 
@@ -21,4 +11,4 @@ The name of output file (for example: input1.txt): test.txt
 
 
 
-x. Write report
+x. Write report ----- Daniel, Alex, Ming
