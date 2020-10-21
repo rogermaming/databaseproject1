@@ -6,32 +6,59 @@ package comp6521p1;
  */
 public class MPMMS {
 
-	int numOfSubLists;
-	int numOfIntInMemory;
-	int numOfIntInASubList;
+	long numOfSubLists;
+	long numOfIntInMemory;
 
-	public MPMMS(int numOfSubLists, int numOfIntInMemory) {
+	static int SEEK_TIME = 10;
+	static int ROTATIONAL_LATENCY = 1;
+	static int TRANSFER_TIME_PER_BLOCK = 5;
+
+	public MPMMS(int numOfIntInMemory, int numOfSubLists) {
 		this.numOfSubLists = numOfSubLists;
 		this.numOfIntInMemory = numOfIntInMemory;
-		this.numOfIntInASubList = numOfIntInMemory;
 	}
 
-	public int calculateNumOfInputBuffers() {
-		// let's try a 2 pass
-		return (int) Math.ceil((double) numOfSubLists / 2);
+	int calculateNumOfInputBuffers() {
+		double leastCost = Double.MAX_VALUE;
+		int result = -1;
+
+		// Least number of buffers to merge is 2
+		for (int i = 2; i <= numOfSubLists && i < numOfIntInMemory; i++) {
+			double cost = calculateCost(i);
+			if (cost < leastCost) {
+				leastCost = cost;
+				result = i;
+			}
+		}
+		return result;
 	}
 
-	public int calculateNumOfIntInAInputBuffer() {
-		return 64;
+	double calculateCost(int numOfBuffers) {
+		int noPhase = (int) Math.ceil(Math.log(numOfSubLists) / Math.log(numOfBuffers));
+		return noPhase * (((double) SEEK_TIME + ROTATIONAL_LATENCY) / numOfIntInMemory
+				* Math.pow(Math.sqrt(numOfBuffers) + 1, 2) + 2 * TRANSFER_TIME_PER_BLOCK);
 	}
 
-	public int calculateNumOfIntInOutputBuffer() {
-		return 64;
+	int calculateBufferSize() {
+		int maxValid = Math.floorDiv((int) numOfIntInMemory - 1, (int) numOfSubLists);
+		int minValid = 1;
+
+		double sqrtW = Math.sqrt(numOfSubLists);
+		int result = (int) Math.round(numOfIntInMemory * (sqrtW - 1) / (sqrtW * (numOfSubLists - 1)));
+
+		if (result < minValid) {
+			return 1;
+		}
+
+		if (result > maxValid) {
+			return maxValid;
+		}
+
+		return result;
 	}
 
-	public int calculateNumOfStagesInPhase2() {
-		// let's try a 2 pass
-		return 2;
+	int calculateOutputBufferSize(int numOfInputBuffers, int inputBufferSize) {
+		return (int) numOfIntInMemory - (calculateNumOfInputBuffers() * inputBufferSize);
 	}
 
 }

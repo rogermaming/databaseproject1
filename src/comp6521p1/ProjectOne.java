@@ -1,237 +1,278 @@
 package comp6521p1;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 public class ProjectOne {
 
-	static final String FILE = "input.txt";
+	static final String FILE = "inputs/10e6_512kb.txt";
 	static final boolean DEBUG = true;
-	static long sampleSize = 0l;
-	static int memorySizeInKB = 1024;
-	static final int MEMORY_RESERVED_FOR_PROGRAM_IN_KB = 1020;
+	static final int INT_SIZE = 4;
+
+	// If true, use the memory size in the input file to store data
+	// If false, use runtime free memory
+	static final boolean USE_GIVEN_MEMORY_SIZE = true;
+
+	static long sampleSize;
+	static long memorySizeInKB;
 
 	public static void main(String[] args) {
-		
-		long startTime = System.currentTimeMillis();
-		
 		try {
 
 			File file = new File(FILE);
 			Scanner scanner = new Scanner(file);
 
-			if (scanner.hasNext()) {
-				sampleSize = Long.parseLong(scanner.next());
-			}
+			readSampleSizeAndMemorySize(scanner);
 
-			if (scanner.hasNext()) {
-				String size = scanner.next();
-				if (size.contains("MB")) {
-					memorySizeInKB = Integer.parseInt(size.replace("MB", "")) * 1024;
-				} else if (size.contains("KB")) {
-					memorySizeInKB = Integer.parseInt(size.replace("KB", ""));
-
-				} else {
-					System.out.println("The input file doesn't contains correct memory size.");
-					System.exit(0);
-				}
-			}
+			long freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 : Runtime.getRuntime().freeMemory();
+			long numOfIntInMemory = freeMemory / INT_SIZE;
 
 			if (DEBUG) {
-				System.out.println("sampleSize = " + sampleSize + " samples");
-				System.out.println("memorySizeInKB = " + memorySizeInKB + " KB");
+				System.out.println("\nfreeMemory = " + (freeMemory / 1024) + " KB");
+				System.out.println("numOfIntInMemory = " + numOfIntInMemory + " integers");
 			}
 
 			/*******************************************************************************
 			 * ------------------------------- PHASE 1 -------------------------------------
 			 *******************************************************************************/
-			long phaseOneStartTime = System.currentTimeMillis();
-			if (DEBUG) {
-				System.out.println("PHASE 1");
-			}
 
-			int memoryForData = memorySizeInKB - MEMORY_RESERVED_FOR_PROGRAM_IN_KB;
-			int numOfIntInMemory = memoryForData * 1024 / 4;
-
-			// if it's 1, we don't need phase 2, one MS will finish the job
-			int numOfRunsInPhase1 = (int) Math.ceil((double) sampleSize / numOfIntInMemory);
+			long startTime;
 
 			if (DEBUG) {
-				System.out.println("\tmemoryForData = " + memoryForData + " KB");
-				System.out.println("\tnumOfIntInMemory = " + numOfIntInMemory + " integers");
-				System.out.println("\tnumOfRunsInPhase1 = " + numOfRunsInPhase1 + " runs");
+				System.out.println("\nPHASE 1 START");
+				startTime = System.nanoTime();
 			}
 
-			for (int i = 0; i < numOfRunsInPhase1; i++) {
-				int[] recordsInMemory = new int[numOfIntInMemory];
-				for (int j = 0; j < numOfIntInMemory; j++) {
-					if (scanner.hasNext()) {
-						recordsInMemory[j] = scanner.nextInt();
-					} else {
-						break;
-					}
-				}
+			int numOfSubListsAfterPhaseOne = phaseOne(scanner, freeMemory, numOfIntInMemory);
 
-				new MergeSort(recordsInMemory).run();
-
-				File output = new File("output_phase_1_file_" + i + ".txt");
-				if (output.createNewFile()) {
-					FileWriter writer = new FileWriter(output);
-					for (int k : recordsInMemory) {
-						if (k > 0) {
-							writer.write(k + " ");
-						}
-					}
-					writer.close();
-				}
+			if (DEBUG) {
+				long duration = System.nanoTime() - startTime;
+				System.out.println("PHASE 1 END (" + TimeUnit.NANOSECONDS.toMillis(duration) + " ms)");
 			}
 
 			scanner.close();
-			long phaseOneEndTime = System.currentTimeMillis();
-			System.out.println("Phase One Time Cost£º " + (phaseOneEndTime - phaseOneStartTime) + "ms");
+			System.gc();
 
 			/*******************************************************************************
 			 * ------------------------------- PHASE 2 -------------------------------------
 			 *******************************************************************************/
-			
-			long phaseTwoStartTime = System.currentTimeMillis();
+
 			if (DEBUG) {
-				System.out.println("PHASE 2");
+				System.out.println("\nPHASE 2 START");
+				startTime = System.nanoTime();
 			}
 
-			if (numOfRunsInPhase1 > 1) {
-
-				MPMMS mpmms = new MPMMS(numOfRunsInPhase1, numOfIntInMemory);
-				int numOfInputBuffers = mpmms.calculateNumOfInputBuffers();
-				int numOfIntInAInputBuffer = mpmms.calculateNumOfIntInAInputBuffer();
-				int numOfIntInOutputBuffer = mpmms.calculateNumOfIntInOutputBuffer();
-				int numOfStagesInPhase2 = mpmms.calculateNumOfStagesInPhase2();
-
-				if (DEBUG) {
-					System.out.println("\tnumOfInputBuffers = " + numOfInputBuffers + "");
-					System.out.println("\tnumOfIntInAInputBuffer = " + numOfIntInAInputBuffer + " integers");
-					System.out.println("\tnumOfIntInOutputBuffer = " + numOfIntInOutputBuffer + " integers");
-					System.out.println("\tnumOfStagesInPhase2 = " + numOfStagesInPhase2 + " stages");
-				}
-
-				Deque<File> phase1Files = getPhase1Files(numOfRunsInPhase1);
-
-				int numOfOutputFilesInPreviousStage = 0;
-				for (int stage = 0; stage < numOfStagesInPhase2; stage++) {
-					if (DEBUG) {
-						System.out.println("PHASE 2 STAGE " + stage);
-					}
-
-					Deque<File> inputFilesForThisStage = stage == 0 ? phase1Files
-							: getPhase2Files(stage - 1, numOfOutputFilesInPreviousStage);
-					numOfOutputFilesInPreviousStage = 0;
-
-					int run = 0;
-					while (!inputFilesForThisStage.isEmpty()) {
-
-						File output = new File("output_phase_2_stage_" + stage + "_file_" + run + ".txt");
-						FileWriter writer = new FileWriter(output);
-
-						List<Scanner> scanners = new ArrayList<>(numOfInputBuffers);
-						for (int j = 0; j < numOfInputBuffers; j++) {
-							File f = inputFilesForThisStage.isEmpty() ? null : inputFilesForThisStage.pop();
-							if (f != null && f.exists()) {
-								scanners.add(new Scanner(f));
-							}
-						}
-						int[][] inputBuffers = new int[numOfInputBuffers][numOfIntInAInputBuffer];
-						int[] index = new int[numOfInputBuffers];
-						int[] outputBuffer = new int[numOfIntInOutputBuffer];
-
-						for (int j = 0; j < numOfInputBuffers && j < scanners.size(); j++) { // populate input buffers
-																								// for the 1st time
-							for (int k = 0; k < numOfIntInAInputBuffer && scanners.get(j).hasNext(); k++) {
-								inputBuffers[j][k] = scanners.get(j).nextInt();
-							}
-						}
-
-						int outputIndex = 0;
-
-						while (true) {
-							int min = 0;
-							int bufferNo = 0;
-
-							for (int j = 0; j < numOfInputBuffers; j++) {
-								if (index[j] >= numOfIntInAInputBuffer) {
-									if (scanners.get(j).hasNext()) {
-										for (int k = 0; k < numOfIntInAInputBuffer; k++) { // populate input buffers
-																							// when needed
-											inputBuffers[j][k] = scanners.get(j).hasNext() ? scanners.get(j).nextInt()
-													: 0;
-										}
-										index[j] = 0;
-									}
-									continue;
-								}
-								if (min == 0 && inputBuffers[j][index[j]] > 0) {
-									min = inputBuffers[j][index[j]];
-									bufferNo = j;
-								} else if (inputBuffers[j][index[j]] > 0 && min > inputBuffers[j][index[j]]) {
-									min = inputBuffers[j][index[j]];
-									bufferNo = j;
-								}
-							}
-
-							if (min == 0) {
-								break;
-							} else {
-								index[bufferNo]++;
-								outputBuffer[outputIndex] = min;
-								outputIndex++;
-								if (outputIndex + 1 == numOfIntInOutputBuffer) { // write output buffer data to file
-									for (int j = 0; j < outputIndex; j++) {
-										writer.write(outputBuffer[j] + " ");
-										outputBuffer[j] = 0;
-									}
-									outputIndex = 0;
-								}
-							}
-						}
-
-						scanners.forEach(s -> s.close());
-						writer.close();
-						run++;
-						numOfOutputFilesInPreviousStage++;
-					}
-
-				}
+			if (numOfSubListsAfterPhaseOne > 1) {
+				phaseTwo(numOfSubListsAfterPhaseOne);
 			}
-			long phaseTwoEndTime = System.currentTimeMillis();
-			System.out.println("Phase Two Time Cost£º " + (phaseTwoEndTime - phaseTwoStartTime) + "ms");
+
+			if (DEBUG) {
+				long duration = System.nanoTime() - startTime;
+				System.out.println("PHASE 2 END (" + TimeUnit.NANOSECONDS.toMillis(duration) + " ms)");
+			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
-		long endTime = System.currentTimeMillis();
-		System.out.println("Total time cost£º " + (endTime - startTime) + "ms");
 	}
 
-	private static Deque<File> getPhase2Files(int stage, int numOfFiles) {
-		Deque<File> files = new ArrayDeque<>();
+	private static int phaseOne(Scanner scanner, long freeMemory, long numOfIntInMemory) throws IOException {
+
+		// Assuming java sort (quick sort) using 200% memory of data size
+		// e.g. sorting 100 using 2 * 100 * 4 bytes memory
+		// hence, the number of int we can store in memory will be divided by 2
+		numOfIntInMemory /= 2;
+
+		// numOfRuns = num of output files
+		int numOfRunsInPhase1 = (int) Math.ceil((double) sampleSize / numOfIntInMemory);
+
+		for (int i = 0; i < numOfRunsInPhase1; i++) {
+
+			int[] recordsInMemory = new int[(int) numOfIntInMemory];
+
+			for (int j = 0; j < numOfIntInMemory && scanner.hasNext(); j++) {
+				recordsInMemory[j] = scanner.nextInt();
+			}
+
+			// Quick sort, uses twice of memory as input data
+			Arrays.sort(recordsInMemory);
+
+			// Write to output files
+			File output = new File("output_phase_1_file_" + i + ".txt");
+			if (output.createNewFile()) {
+				FileWriter writer = new FileWriter(output);
+				for (int k : recordsInMemory) {
+					if (k > 0) {
+						writer.write(k + " ");
+					}
+				}
+				writer.close();
+			}
+
+		}
+		return numOfRunsInPhase1;
+	}
+
+	private static void phaseTwo(int numOfSubListsAfterPhaseOne) throws IOException, FileNotFoundException {
+
+		long freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 : Runtime.getRuntime().freeMemory();
+		long numOfIntInMemory = freeMemory / INT_SIZE;
+
+		MPMMS mpmms = new MPMMS(numOfSubListsAfterPhaseOne, (int) numOfIntInMemory);
+
+		int numOfInputBuffers = mpmms.calculateNumOfInputBuffers();
+		int numOfIntInAInputBuffer = mpmms.calculateBufferSize();
+		int numOfIntInOutputBuffer = mpmms.calculateOutputBufferSize(numOfInputBuffers, numOfIntInAInputBuffer);
+
+		if (DEBUG) {
+			System.out.println("\tnumOfInputBuffers = " + numOfInputBuffers + "");
+			System.out.println("\tnumOfIntInAInputBuffer = " + numOfIntInAInputBuffer + " integers");
+			System.out.println("\tnumOfIntInOutputBuffer = " + numOfIntInOutputBuffer + " integers");
+		}
+
+		File[] phase1Files = getPhase1Files(numOfSubListsAfterPhaseOne);
+
+		int numOfOutputFilesInPreviousStage = 0;
+
+		for (int stage = 0; numOfOutputFilesInPreviousStage == 0 || numOfOutputFilesInPreviousStage > 1; stage++) {
+
+			long startTime;
+			if (DEBUG) {
+				System.out.println("\n\tPHASE 2 STAGE " + stage + " START");
+				startTime = System.nanoTime();
+			}
+
+			File[] inputFilesForThisStage = stage == 0 ? phase1Files
+					: getPhase2Files(stage - 1, numOfOutputFilesInPreviousStage);
+			numOfOutputFilesInPreviousStage = 0;
+
+			int run = 0;
+			for (int i = 0; i < inputFilesForThisStage.length; i += numOfInputBuffers) {
+
+				File output = new File("output_phase_2_stage_" + stage + "_file_" + run + ".txt");
+				FileWriter writer = new FileWriter(output);
+
+				Scanner[] scanners = new Scanner[numOfInputBuffers];
+				for (int j = 0; j < numOfInputBuffers && i + j < inputFilesForThisStage.length; j++) {
+					File f = inputFilesForThisStage[i + j];
+					if (f != null && f.exists()) {
+						scanners[j] = new Scanner(f);
+					}
+				}
+				int[][] inputBuffers = new int[numOfInputBuffers][numOfIntInAInputBuffer];
+				int[] index = new int[numOfInputBuffers];
+				int[] outputBuffer = new int[numOfIntInOutputBuffer];
+
+				for (int j = 0; j < numOfInputBuffers && j < scanners.length && scanners[j] != null; j++) {
+					// populate input buffers for the 1st time
+					for (int k = 0; k < numOfIntInAInputBuffer && scanners[j].hasNext(); k++) {
+						inputBuffers[j][k] = scanners[j].nextInt();
+					}
+				}
+
+				int outputIndex = 0;
+
+				while (true) {
+					int min = 0;
+					int bufferNo = 0;
+
+					for (int j = 0; j < numOfInputBuffers; j++) {
+						if (index[j] >= numOfIntInAInputBuffer) {
+							if (scanners[j].hasNext()) {
+								for (int k = 0; k < numOfIntInAInputBuffer; k++) { // populate input buffers
+																					// when needed
+									inputBuffers[j][k] = scanners[j].hasNext() ? scanners[j].nextInt() : 0;
+								}
+								index[j] = 0;
+							}
+							continue;
+						}
+						if (min == 0 && inputBuffers[j][index[j]] > 0) {
+							min = inputBuffers[j][index[j]];
+							bufferNo = j;
+						} else if (inputBuffers[j][index[j]] > 0 && min > inputBuffers[j][index[j]]) {
+							min = inputBuffers[j][index[j]];
+							bufferNo = j;
+						}
+					}
+
+					if (min == 0) {
+						break;
+					} else {
+						index[bufferNo]++;
+						outputBuffer[outputIndex] = min;
+						outputIndex++;
+						if (outputIndex + 1 == numOfIntInOutputBuffer) { // write output buffer data to file
+							for (int j = 0; j < outputIndex; j++) {
+								writer.write(outputBuffer[j] + " ");
+								outputBuffer[j] = 0;
+							}
+							outputIndex = 0;
+						}
+					}
+				}
+
+				for (int j = 0; j < scanners.length && scanners[j] != null; j++) {
+					scanners[j].close();
+				}
+				writer.close();
+				run++;
+				numOfOutputFilesInPreviousStage++;
+			}
+
+			if (DEBUG) {
+				long duration = System.nanoTime() - startTime;
+				System.out.println(
+						"\tPHASE 2 STAGE " + stage + " END (" + TimeUnit.NANOSECONDS.toMillis(duration) + " ms)");
+			}
+
+		}
+
+	}
+
+	private static void readSampleSizeAndMemorySize(Scanner scanner) {
+		if (scanner.hasNext()) {
+			sampleSize = Long.parseLong(scanner.next());
+		}
+
+		if (scanner.hasNext()) {
+			String size = scanner.next().toUpperCase();
+			if (size.contains("MB")) {
+				memorySizeInKB = Integer.parseInt(size.replace("MB", "")) * 1024;
+			} else if (size.contains("KB")) {
+				memorySizeInKB = Integer.parseInt(size.replace("KB", ""));
+			} else {
+				System.out.println("The input file doesn't contains correct memory size.");
+				System.exit(0);
+			}
+		}
+
+		if (DEBUG) {
+			System.out.println("sampleSize = " + sampleSize + " samples");
+			System.out.println("memorySizeInKB = " + memorySizeInKB + " KB");
+		}
+	}
+
+	private static File[] getPhase2Files(int stage, int numOfFiles) {
+		File[] files = new File[numOfFiles];
 		for (int i = 0; i < numOfFiles; i++) {
 			File file = new File("output_phase_2_stage_" + stage + "_file_" + i + ".txt");
-			files.add(file);
+			files[i] = file;
 		}
 		return files;
 
 	}
 
-	private static Deque<File> getPhase1Files(int numOfOuputFilesInPhase1) {
-		Deque<File> files = new ArrayDeque<>();
+	private static File[] getPhase1Files(int numOfOuputFilesInPhase1) {
+		File[] files = new File[numOfOuputFilesInPhase1];
 		for (int i = 0; i < numOfOuputFilesInPhase1; i++) {
 			File file = new File("output_phase_1_file_" + i + ".txt");
-			files.add(file);
+			files[i] = file;
 		}
 		return files;
 	}
