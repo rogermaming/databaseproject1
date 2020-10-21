@@ -139,9 +139,9 @@ public class ProjectOne {
 		int numOfIntInOutputBuffer = mpmms.calculateOutputBufferSize(numOfInputBuffers, numOfIntInAInputBuffer);
 
 		if (DEBUG) {
-			System.out.println("\tnumOfInputBuffers = " + numOfInputBuffers + "");
-			System.out.println("\tnumOfIntInAInputBuffer = " + numOfIntInAInputBuffer + " integers");
-			System.out.println("\tnumOfIntInOutputBuffer = " + numOfIntInOutputBuffer + " integers");
+			System.out.println("numOfInputBuffers = " + numOfInputBuffers + "");
+			System.out.println("numOfIntInAInputBuffer = " + numOfIntInAInputBuffer + " integers");
+			System.out.println("numOfIntInOutputBuffer = " + numOfIntInOutputBuffer + " integers");
 		}
 
 		File[] inputFilesForThisStage = getPhase1Files(numOfSubListsAfterPhaseOne);
@@ -165,12 +165,6 @@ public class ProjectOne {
 			for (int i = 0; i < inputFilesForThisStage.length; i += numOfInputBuffers) {
 
 				System.gc();
-				freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 : Runtime.getRuntime().freeMemory();
-				numOfIntInMemory = (long) (freeMemory / INT_SIZE / PHASE_TWO_SAFE_FACTOR);
-
-				System.out.println("\tFree memory = " + (freeMemory / 1024) + " KB");
-				System.out.println("\tnumOfIntInMemory = " + numOfIntInMemory);
-				System.out.flush();
 
 				File output = new File("output_phase_2_stage_" + stage + "_file_" + run + ".txt");
 				FileWriter writer = new FileWriter(output);
