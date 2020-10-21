@@ -10,13 +10,21 @@ import java.util.concurrent.TimeUnit;
 
 public class ProjectOne {
 
-	static final String FILE = "./inputs/ten_million.txt";
+	static final String FILE = "./inputs/10e6_1mb.txt";
 	static final boolean DEBUG = true;
 	static final int INT_SIZE = 4;
 
 	// If true, use the memory size in the input file to store data
 	// If false, use runtime free memory
-	static final boolean USE_GIVEN_MEMORY_SIZE = true;
+	static final boolean USE_GIVEN_MEMORY_SIZE = false;
+	/** When true, please remove -Xmx limit */
+
+	// We cannot use all the available memory to store data,
+	// have to consider the runtime overhead,
+	// therefore we use safe factors to limit the number of int stored in memory
+	static final double PHASE_ONE_SAFE_FACTOR = 2.0d; // Depend on the sorting method, quick sort need to be 2.0
+	static final double PHASE_TWO_SAFE_FACTOR = 2.0d; // Assuming store each int twice (input and output buffer)
+	static final int PHASE_TWO_STATIC_SPACE_FOR_PROGRAM = 4 * 1024;
 
 	static long sampleSize;
 	static long memorySizeInKB;
@@ -30,7 +38,7 @@ public class ProjectOne {
 			readSampleSizeAndMemorySize(scanner);
 
 			long freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 : Runtime.getRuntime().freeMemory();
-			long numOfIntInMemory = freeMemory / INT_SIZE;
+			long numOfIntInMemory = (long) (freeMemory / INT_SIZE / PHASE_ONE_SAFE_FACTOR);
 
 			if (DEBUG) {
 				System.out.println("freeMemory = " + (freeMemory / 1024) + " KB");
@@ -83,11 +91,6 @@ public class ProjectOne {
 
 	private static int phaseOne(Scanner scanner, long numOfIntInMemory) throws IOException {
 
-		// Assuming java sort (quick sort) using 200% memory of data size
-		// e.g. sorting 100 using 2 * 100 * 4 bytes memory
-		// hence, the number of integer we can store in memory will be divided by 2
-		numOfIntInMemory /= 2;
-
 		// numOfRuns = number of output files
 		int numOfRunsInPhase1 = (int) Math.ceil((double) sampleSize / numOfIntInMemory);
 
@@ -119,10 +122,14 @@ public class ProjectOne {
 	}
 
 	private static void phaseTwo(int numOfSubListsAfterPhaseOne) throws IOException, FileNotFoundException {
+
 		System.gc();
+
 		long freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 : Runtime.getRuntime().freeMemory();
-		long numOfIntInMemory = freeMemory / INT_SIZE;
-		System.out.println("Free memory: " + freeMemory);
+		long numOfIntInMemory = (long) (freeMemory / INT_SIZE / PHASE_TWO_SAFE_FACTOR)
+				- PHASE_TWO_STATIC_SPACE_FOR_PROGRAM;
+
+		System.out.println("Free memory = " + (freeMemory / 1024) + " KB");
 		System.out.println("numOfIntInMemory = " + numOfIntInMemory);
 
 		MPMMS mpmms = new MPMMS(numOfSubListsAfterPhaseOne, (int) numOfIntInMemory);
@@ -137,7 +144,7 @@ public class ProjectOne {
 			System.out.println("\tnumOfIntInOutputBuffer = " + numOfIntInOutputBuffer + " integers");
 		}
 
-		File[] phase1Files = getPhase1Files(numOfSubListsAfterPhaseOne);
+		File[] inputFilesForThisStage = getPhase1Files(numOfSubListsAfterPhaseOne);
 
 		int numOfOutputFilesInPreviousStage = 0;
 
@@ -149,13 +156,21 @@ public class ProjectOne {
 				startTime = System.nanoTime();
 			}
 
-			File[] inputFilesForThisStage = stage == 0 ? phase1Files
-					: getPhase2Files(stage - 1, numOfOutputFilesInPreviousStage);
+			if (stage > 0) {
+				inputFilesForThisStage = getPhase2Files(stage - 1, numOfOutputFilesInPreviousStage);
+			}
 			numOfOutputFilesInPreviousStage = 0;
 
 			int run = 0;
 			for (int i = 0; i < inputFilesForThisStage.length; i += numOfInputBuffers) {
+
 				System.gc();
+				freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 : Runtime.getRuntime().freeMemory();
+				numOfIntInMemory = (long) (freeMemory / INT_SIZE / PHASE_TWO_SAFE_FACTOR);
+
+				System.out.println("\tFree memory = " + (freeMemory / 1024) + " KB");
+				System.out.println("\tnumOfIntInMemory = " + numOfIntInMemory);
+				System.out.flush();
 
 				File output = new File("output_phase_2_stage_" + stage + "_file_" + run + ".txt");
 				FileWriter writer = new FileWriter(output);
