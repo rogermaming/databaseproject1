@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ProjectOne {
 
-	static final String FILE = "inputs/10e6_512kb.txt";
+	static final String FILE = "./inputs/ten_million.txt";
 	static final boolean DEBUG = true;
 	static final int INT_SIZE = 4;
 
@@ -33,7 +33,7 @@ public class ProjectOne {
 			long numOfIntInMemory = freeMemory / INT_SIZE;
 
 			if (DEBUG) {
-				System.out.println("\nfreeMemory = " + (freeMemory / 1024) + " KB");
+				System.out.println("freeMemory = " + (freeMemory / 1024) + " KB");
 				System.out.println("numOfIntInMemory = " + numOfIntInMemory + " integers");
 			}
 
@@ -48,7 +48,7 @@ public class ProjectOne {
 				startTime = System.nanoTime();
 			}
 
-			int numOfSubListsAfterPhaseOne = phaseOne(scanner, freeMemory, numOfIntInMemory);
+			int numOfSubListsAfterPhaseOne = phaseOne(scanner, numOfIntInMemory);
 
 			if (DEBUG) {
 				long duration = System.nanoTime() - startTime;
@@ -81,14 +81,14 @@ public class ProjectOne {
 		}
 	}
 
-	private static int phaseOne(Scanner scanner, long freeMemory, long numOfIntInMemory) throws IOException {
+	private static int phaseOne(Scanner scanner, long numOfIntInMemory) throws IOException {
 
 		// Assuming java sort (quick sort) using 200% memory of data size
 		// e.g. sorting 100 using 2 * 100 * 4 bytes memory
-		// hence, the number of int we can store in memory will be divided by 2
+		// hence, the number of integer we can store in memory will be divided by 2
 		numOfIntInMemory /= 2;
 
-		// numOfRuns = num of output files
+		// numOfRuns = number of output files
 		int numOfRunsInPhase1 = (int) Math.ceil((double) sampleSize / numOfIntInMemory);
 
 		for (int i = 0; i < numOfRunsInPhase1; i++) {
@@ -119,9 +119,11 @@ public class ProjectOne {
 	}
 
 	private static void phaseTwo(int numOfSubListsAfterPhaseOne) throws IOException, FileNotFoundException {
-
+		System.gc();
 		long freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 : Runtime.getRuntime().freeMemory();
 		long numOfIntInMemory = freeMemory / INT_SIZE;
+		System.out.println("Free memory: " + freeMemory);
+		System.out.println("numOfIntInMemory = " + numOfIntInMemory);
 
 		MPMMS mpmms = new MPMMS(numOfSubListsAfterPhaseOne, (int) numOfIntInMemory);
 
@@ -153,6 +155,7 @@ public class ProjectOne {
 
 			int run = 0;
 			for (int i = 0; i < inputFilesForThisStage.length; i += numOfInputBuffers) {
+				System.gc();
 
 				File output = new File("output_phase_2_stage_" + stage + "_file_" + run + ".txt");
 				FileWriter writer = new FileWriter(output);

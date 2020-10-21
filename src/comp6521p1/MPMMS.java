@@ -13,7 +13,7 @@ public class MPMMS {
 	static int ROTATIONAL_LATENCY = 1;
 	static int TRANSFER_TIME_PER_BLOCK = 5;
 
-	public MPMMS(int numOfIntInMemory, int numOfSubLists) {
+	public MPMMS(int numOfSubLists, int numOfIntInMemory) {
 		this.numOfSubLists = numOfSubLists;
 		this.numOfIntInMemory = numOfIntInMemory;
 	}
