@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ProjectOne {
 
-	static final String FILE = "./inputs/1000000.txt";
+	static final String FILE = "./inputs/10e6_1mb.txt";
 	static final boolean DEBUG = true;
 	static final int INT_SIZE = 4;
 
@@ -38,8 +38,9 @@ public class ProjectOne {
 
 			readSampleSizeAndMemorySize(scanner);
 
-			//long freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 : Runtime.getRuntime().freeMemory();
-			
+			// long freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 :
+			// Runtime.getRuntime().freeMemory();
+
 			long freeMemory = Runtime.getRuntime().freeMemory() - PHASE_ONE_STATIC_SPACE_FOR_PROGRAM;
 			long numOfIntInMemory = (long) (freeMemory / INT_SIZE / PHASE_ONE_SAFE_FACTOR);
 
@@ -114,7 +115,7 @@ public class ProjectOne {
 				FileWriter writer = new FileWriter(output);
 				for (int k : recordsInMemory) {
 					if (k > 0) {
-						writer.write(k + " ");
+						writer.write(k + "\n");
 					}
 				}
 				writer.close();
@@ -216,6 +217,10 @@ public class ProjectOne {
 					}
 
 					if (min == 0) {
+						for (int j = 0; j < outputIndex; j++) {
+							writer.write(outputBuffer[j] + "\n");
+							outputBuffer[j] = 0;
+						}
 						break;
 					} else {
 						index[bufferNo]++;
@@ -223,7 +228,7 @@ public class ProjectOne {
 						outputIndex++;
 						if (outputIndex + 1 == numOfIntInOutputBuffer) { // write output buffer data to file
 							for (int j = 0; j < outputIndex; j++) {
-								writer.write(outputBuffer[j] + " ");
+								writer.write(outputBuffer[j] + "\n");
 								outputBuffer[j] = 0;
 							}
 							outputIndex = 0;
