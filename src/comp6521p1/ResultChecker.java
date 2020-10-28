@@ -48,28 +48,28 @@ public class ResultChecker {
 			System.out.println("Please input the number of files");		
 			int fileNbr = Integer.parseInt(scan.next());
 			
-			File[] files = new File[stageNbr * fileNbr];
-			for (int j = 0; j < stageNbr + 1; j++) {
-				for (int i = 0; i < files.length; i++) {
-					File file = new File("output_phase_2_stage_" + stageNbr + "_file_" + fileNbr + ".txt");
-					files[i+j] = file;
-				}
+			File[] files = new File[1];
+			//File[] files = new File[fileNbr+1];
+			for (int i = 0; i < files.length; i++) {
+				//File file = new File("output_phase_2_stage_" + stageNbr + "_file_" + fileNbr + ".txt");
+				File file = new File("1000000.txt");
+				files[i] = file;
+				//files[i] = file;
 			}
 			
+			
 			int count = 0;
-			for (int j = 0; j < stageNbr + 1; j ++) {
-				for(int i=0; i< files.length; i++) {
-					if(files[i+j] != null && files[i+j].exists()) {
-						try {
-							Scanner read = new Scanner(files[i]);
-							while(read.hasNext()) {
-								read.next();
-								count ++;
-							}
-							read.close();
-						} catch (FileNotFoundException e) {
-							e.printStackTrace();
+			for(int i=0; i< files.length; i++) {
+				if(files[i] != null && files[i].exists()) {
+					try {
+						Scanner read = new Scanner(files[i]);
+						while(read.hasNext()) {
+							read.next();
+							count ++;
 						}
+						read.close();
+					} catch (FileNotFoundException e) {
+						e.printStackTrace();
 					}
 				}
 			}

@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ProjectOne {
 
-	static final String FILE = "./inputs/10e6_1mb.txt";
+	static final String FILE = "./inputs/1000000.txt";
 	static final boolean DEBUG = true;
 	static final int INT_SIZE = 4;
 
@@ -24,7 +24,8 @@ public class ProjectOne {
 	// therefore we use safe factors to limit the number of int stored in memory
 	static final double PHASE_ONE_SAFE_FACTOR = 2.0d; // Depend on the sorting method, quick sort need to be 2.0
 	static final double PHASE_TWO_SAFE_FACTOR = 2.0d; // Assuming store each int twice (input and output buffer)
-	static final int PHASE_TWO_STATIC_SPACE_FOR_PROGRAM = 4 * 1024;
+	static final int PHASE_ONE_STATIC_SPACE_FOR_PROGRAM = 400000;
+	static final int PHASE_TWO_STATIC_SPACE_FOR_PROGRAM = 900000;
 
 	static long sampleSize;
 	static long memorySizeInKB;
@@ -37,7 +38,9 @@ public class ProjectOne {
 
 			readSampleSizeAndMemorySize(scanner);
 
-			long freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 : Runtime.getRuntime().freeMemory();
+			//long freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 : Runtime.getRuntime().freeMemory();
+			
+			long freeMemory = Runtime.getRuntime().freeMemory() - PHASE_ONE_STATIC_SPACE_FOR_PROGRAM;
 			long numOfIntInMemory = (long) (freeMemory / INT_SIZE / PHASE_ONE_SAFE_FACTOR);
 
 			if (DEBUG) {
@@ -125,9 +128,8 @@ public class ProjectOne {
 
 		System.gc();
 
-		long freeMemory = USE_GIVEN_MEMORY_SIZE ? memorySizeInKB * 1024 : Runtime.getRuntime().freeMemory();
-		long numOfIntInMemory = (long) (freeMemory / INT_SIZE / PHASE_TWO_SAFE_FACTOR)
-				- PHASE_TWO_STATIC_SPACE_FOR_PROGRAM;
+		long freeMemory = Runtime.getRuntime().freeMemory() - PHASE_TWO_STATIC_SPACE_FOR_PROGRAM;
+		long numOfIntInMemory = (long) (freeMemory / INT_SIZE / PHASE_TWO_SAFE_FACTOR);
 
 		System.out.println("Free memory = " + (freeMemory / 1024) + " KB");
 		System.out.println("numOfIntInMemory = " + numOfIntInMemory);
@@ -266,7 +268,6 @@ public class ProjectOne {
 
 		if (DEBUG) {
 			System.out.println("sampleSize = " + sampleSize + " samples");
-			System.out.println("memorySizeInKB = " + memorySizeInKB + " KB");
 		}
 	}
 
